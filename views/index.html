@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Web Socket.IO</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: "#fff7ed",
+                100: "#ffedd5",
+                200: "#fed7aa",
+                300: "#fdba74",
+                400: "#fb923c",
+                500: "#f97316",
+                600: "#ea580c",
+                700: "#c2410c",
+                800: "#9a3412",
+                900: "#7c2d12",
+              },
+            },
+          },
+          fontFamily: {
+            body: ["Inter", "ui-sans-serif", "system-ui"],
+            sans: ["Inter", "ui-sans-serif", "system-ui"],
+          },
+        },
+      };
+    </script>
+  </head>
+  <body>
+   
+    <section class="bg-gray-50" id="formLogin">
+      <div class="flex flex-col items-center justify-center px-6 py-8 mx-auto h-screen lg:py-0">
+        <a href="#" class="flex items-center mb-6 text-2xl font-semibold text-gray-900">
+          Chat de Soporte Técnico
+        </a>
+        <div class="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
+          <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
+            <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl">
+              Inicia sesión con tu usuario
+            </h1>
+            <form id="loginForm">
+              <div class="space-y-4 md:space-y-6">
+                <div>
+                  <label for="userNickName" class="block mb-2 text-sm font-medium text-gray-900">Usuario</label>
+                  <input type="text" name="userNickName" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" id="userNickName" placeholder="Ingresa tu usuario registrado" required="" />
+                </div>
+                <div>
+                  <label for="password" class="block mb-2 text-sm font-medium text-gray-900">Contraseña</label>
+                  <input type="password" name="password" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" id="password" placeholder="Ingresa tu contraseña registrada" required="" />
+                </div>
+                <button type="submit" class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center" id="loginButton">
+                  Acceder
+                </button>
+              </div>
+            </form>
+            <div id="errorMessage" style="color: red;"></div> <!-- Mostrar mensaje de error -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section class="body-chat" style="display:none;">
+      <div class="container">
+        <div class="leftSide">
+          <div class="header">
+            <div class="userimg">
+              <img src="img/chat-grupal.jpg" class="cover" />
+            </div>
+            <ul class="nav_icons">
+              <li><ion-icon name="scan-circle-outline"></ion-icon></li>
+              <li><ion-icon name="chatbox"></ion-icon></li>
+              <li><ion-icon name="ellipsis-vertical"></ion-icon></li>
+            </ul>
+          </div>
+          <div class="search_chat">
+            <div>
+              <input type="text" placeholder="" />
+              <ion-icon name="search-outline"></ion-icon>
+            </div>
+          </div>
+          <div class="chatlist">
+            <div class="block active">
+              <div class="imgbx">
+                <img src="img/chat-grupal.jpg" class="cover" />
+              </div>
+              <div class="details">
+                <div class="listHead">
+                  <h4>Chat</h4>
+                  <p class="time" style="visibility: hidden;">Hora en 2da versión.</p>
+                </div>
+                <div class="message_p">
+                  <p>Recuerda, respetar a los demás usuarios.</p>
+                </div>
+              </div>
+            </div>
+            <div id="formShowUsers">
+              <div class="block" id="formShowUsers">
+                <div class="details">
+                  <div class="listHead">
+                    <h4>Usuarios en línea:</h4>
+                    <p class="time" style="visibility: hidden;">Hora en 2da versión.</p>
+                  </div>
+                  <div class="message_p">
+                    <ul id="usersActive"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="rightSide" id="formChatGrupal">
+          <div class="header">
+            <div class="imgText">
+              <div class="userimg">
+                <img src="img/chat-grupal.jpg" class="cover" />
+              </div>
+              <h4>Chat<br /><span>en línea</span></h4>
+            </div>
+            <ul class="nav_icons">
+              <li><ion-icon name="search-outline"></ion-icon></li>
+              <li><ion-icon name="ellipsis-vertical"></ion-icon></li>
+            </ul>
+          </div>
+
+          <div class="chatBox" id="messages">
+            
+          </div>
+
+          <div class="chatBox_input">
+            <input id="userFile" type="file" accept="image/png, image/jpeg" hidden />
+            <button id="sendFile"><ion-icon name="attach-outline"></ion-icon></button>
+            <input type="text" id="userMessage" placeholder="Escribir mensaje" />
+            <button id="sendMessage"><ion-icon name="send-outline"></ion-icon></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      const loginForm = document.getElementById("loginForm");
+
+      loginForm.addEventListener("submit", async function (event) {
+        event.preventDefault(); 
+
+        const userNickName = document.getElementById("userNickName").value;
+        const password = document.getElementById("password").value;
+
+        try {
+          const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userNickName: userNickName,
+              password: password,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            
+            document.getElementById("formLogin").style.display = "none";
+            document.querySelector(".body-chat").style.display = "block";
+          } else {
+            
+            document.getElementById("errorMessage").textContent = result.message || 'Error al iniciar sesión';
+          }
+        } catch (error) {
+          console.error('Error en el servidor:', error);
+          document.getElementById("errorMessage").textContent = "Error en el servidor";
+        }
+      });
+
+      const socket = io(); 
+      socket.on('userConnected', function (userName) {
+        const usersList = document.getElementById("usersActive");
+        const li = document.createElement('li');
+        li.textContent = userName;
+        usersList.appendChild(li);
+      });
+
+      socket.on('receiveMessage', function (message) {
+        const messagesBox = document.getElementById("messages");
+        const msgElement = document.createElement('div');
+        msgElement.textContent = message;
+        messagesBox.appendChild(msgElement);
+      });
+
+      const sendMessageButton = document.getElementById('sendMessage');
+      const userMessageInput = document.getElementById('userMessage');
+
+      sendMessageButton.addEventListener('click', function () {
+        const message = userMessageInput.value;
+        socket.emit('sendMessage', message);
+        userMessageInput.value = ''; 
+      });
+    </script>
+
+    <!-- Scripts de socket y chat -->
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+  </body>
+</html>
